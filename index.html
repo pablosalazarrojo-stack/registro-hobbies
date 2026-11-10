@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de Hobbies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+body { margin: 0; }
+/* Layout: una tarjeta centrada por pantalla (registro, espera, pareja, admin); todo cabe en el celular */
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --fg: #14213a;
+  --muted: #5a6680;
+  --line: #d5dce8;
+  --accent: #1f4fd1;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3eafc;
+  --ok: #18794e;
+  --ok-soft: #dcf3e7;
+  --warn: #9a5b00;
+  --warn-soft: #fdf0d9;
+  --error: #c0362c;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1322; --surface: #161e32; --fg: #e8edf7; --muted: #9aa6bf; --line: #2a3550;
+    --accent: #7c9cff; --accent-fg: #0d1322; --accent-soft: #1f2a48; --ok: #4cc38a; --ok-soft: #133426;
+    --warn: #f0b04f; --warn-soft: #3a2a10; --error: #ff7a6e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1322; --surface: #161e32; --fg: #e8edf7; --muted: #9aa6bf; --line: #2a3550;
+  --accent: #7c9cff; --accent-fg: #0d1322; --accent-soft: #1f2a48; --ok: #4cc38a; --ok-soft: #133426;
+  --warn: #f0b04f; --warn-soft: #3a2a10; --error: #ff7a6e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 48px;
+}
+.wrap { max-width: 560px; margin: 0 auto; display: grid; gap: 20px; }
+.wrap.wide { max-width: 860px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px clamp(20px, 5vw, 32px); display: grid; gap: 22px; min-width: 0; }
+.step-label { font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 7vw, 36px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0; }
+.lead { color: var(--muted); margin: 0; }
+.head { display: grid; gap: 8px; }
+form { display: grid; gap: 18px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+label, legend { font-weight: 600; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); font-weight: 400; }
+.hobby { display: grid; gap: 6px; min-width: 0; }
+input[type="text"], input[type="tel"], input[type="password"], select {
+  width: 100%; font: inherit; color: var(--fg); background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px;
+}
+input:focus-visible, select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.field.invalid input, .field.invalid select { border-color: var(--error); }
+.err { color: var(--error); font-size: 13px; }
+.err:empty { display: none; }
+.hobbies { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 480px) { .hobbies { grid-template-columns: 1fr; } }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span {
+  display: grid; place-items: center; gap: 2px; padding: 12px 6px; border: 1.5px solid var(--line); border-radius: 10px;
+  cursor: pointer; text-align: center; transition: border-color .15s, background .15s;
+}
+.chip b { font-family: var(--display); font-size: 18px; font-weight: 800; letter-spacing: .02em; }
+.chip small { font-size: 11px; color: var(--muted); line-height: 1.2; }
+.chip input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+.chip input:focus-visible + span { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+fieldset.invalid .chip span { border-color: var(--error); }
+.btn {
+  font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 13px 18px; cursor: pointer;
+  background: var(--accent); color: var(--accent-fg); text-align: center; text-decoration: none; display: inline-block;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--line); }
+.btn.go { background: var(--ok); color: var(--surface); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.actions .btn { flex: 1 1 160px; }
+.summary { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; font-size: 15px; }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.badge { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; font-weight: 800; }
+.badge.ok { background: var(--ok); color: var(--surface); }
+.badge.wait { background: var(--accent-soft); color: var(--accent); }
+.foot { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.linkbtn { background: none; border: 0; color: var(--accent); font: inherit; font-size: inherit; cursor: pointer; text-decoration: underline; padding: 0; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.pulse { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.pulse::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .pulse::before { animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .card { animation: in .25s ease-out; }
+  @keyframes in { from { transform: translateY(6px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+
+/* Pantalla de pareja */
+.partner { display: grid; gap: 12px; padding: 20px; border-radius: 12px; background: var(--accent-soft); }
+.partner .name { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 7vw, 34px); line-height: 1.1; overflow-wrap: anywhere; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); color: var(--accent); border: 1px solid var(--line); }
+.common { font-size: 15px; margin: 0; }
+.phone { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.phone code { font-family: var(--body); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; user-select: all; }
+
+/* Admin */
+.pill { justify-self: start; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
+.pill.idle { background: var(--accent-soft); color: var(--accent); }
+.pill.draft { background: var(--warn-soft); color: var(--warn); }
+.pill.live { background: var(--ok-soft); color: var(--ok); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { display: grid; gap: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 64px; }
+.stat b { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; }
+.stat small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.stat.total { background: var(--accent-soft); border-color: transparent; }
+.groups { display: grid; gap: 8px; }
+.group { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.group .who { display: flex; flex-wrap: wrap; gap: 4px 14px; font-weight: 600; }
+.group .who span small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+.group .why { font-size: 13px; color: var(--muted); }
+.group.flag { border-color: var(--warn); }
+.group.flag .why { color: var(--warn); }
+.confirm { display: grid; gap: 12px; padding: 16px; border-radius: 12px; border: 1.5px solid var(--accent); }
+.confirm p { margin: 0; font-weight: 500; }
+.demo { display: grid; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1.5px dashed var(--line); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; background: var(--bg); }
+details summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 10px; }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap" id="wrap">
+  <div class="brand"><span class="dot"></span>Escuela de Negocios · Campus Ciudad de México</div>
+
+  <!-- Paso 1: registro -->
+  <section class="card" id="paso1">
+    <div class="head">
+      <div class="step-label">Paso 1 de 2</div>
+      <h1>Regístrate</h1>
+      <p class="lead">Escribe tu nombre para empezar. Al final te vamos a presentar a alguien de otra carrera con quien compartes hobbies.</p>
+    </div>
+    <form id="f1" novalidate>
+      <div class="field" id="campo-nombre">
+        <label for="nombre">¿Cómo te llamas?</label>
+        <input type="text" id="nombre" autocomplete="given-name" placeholder="Ej. Sofía" required>
+        <div class="err" id="err-nombre"></div>
+      </div>
+      <button class="btn" type="submit">Continuar</button>
+    </form>
+    <p class="note">¿Ya te registraste? <button class="linkbtn" type="button" id="ir-buscar">Consulta tu pareja con tu WhatsApp</button></p>
+  </section>
+
+  <!-- Paso 2: datos -->
+  <section class="card" id="paso2" hidden>
+    <div class="head">
+      <div class="step-label">Paso 2 de 2</div>
+      <h1 id="saludo">Cuéntanos de ti</h1>
+      <p class="lead">Llena tus datos. Toma menos de un minuto.</p>
+    </div>
+    <form id="f2" novalidate>
+      <div class="field" id="campo-completo">
+        <label for="completo">Nombre completo</label>
+        <input type="text" id="completo" autocomplete="name" placeholder="Nombre y apellidos" required>
+        <div class="err" id="err-completo"></div>
+      </div>
+      <div class="field" id="campo-whatsapp">
+        <label for="whatsapp">WhatsApp <span class="hint">· 10 dígitos</span></label>
+        <input type="tel" id="whatsapp" inputmode="numeric" autocomplete="tel-national" placeholder="55 1234 5678" required>
+        <div class="err" id="err-whatsapp"></div>
+      </div>
+      <div class="field" id="campo-hobbies">
+        <label for="hobby1">Tus tres hobbies</label>
+        <div class="hobbies">
+          <div class="hobby"><select id="hobby1" aria-label="Hobby 1"></select><input type="text" id="hobby1-otro" placeholder="¿Cuál?" aria-label="Otro hobby 1" hidden></div>
+          <div class="hobby"><select id="hobby2" aria-label="Hobby 2"></select><input type="text" id="hobby2-otro" placeholder="¿Cuál?" aria-label="Otro hobby 2" hidden></div>
+          <div class="hobby"><select id="hobby3" aria-label="Hobby 3"></select><input type="text" id="hobby3-otro" placeholder="¿Cuál?" aria-label="Otro hobby 3" hidden></div>
+        </div>
+        <div class="err" id="err-hobbies"></div>
+      </div>
+      <fieldset id="campo-carrera">
+        <legend>Tu carrera</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="carrera" id="c-lem" value="LEM"><span><b>LEM</b></span></label>
+          <label class="chip"><input type="radio" name="carrera" id="c-lde" value="LDE"><span><b>LDE</b></span></label>
+          <label class="chip"><input type="radio" name="carrera" id="c-bgb" value="BGB"><span><b>BGB</b></span></label>
+          <label class="chip"><input type="radio" name="carrera" id="c-laf" value="LAF"><span><b>LAF</b></span></label>
+          <label class="chip"><input type="radio" name="carrera" id="c-cpf" value="CPF"><span><b>CPF</b></span></label>
+          <label class="chip"><input type="radio" name="carrera" id="c-lae" value="LAE"><span><b>LAE</b></span></label>
+        </div>
+        <div class="err" id="err-carrera"></div>
+      </fieldset>
+      <div class="err" id="err-envio"></div>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="atras">Atrás</button>
+        <button class="btn" type="submit" id="enviar">Enviar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Espera: registrado, sin pareja liberada -->
+  <section class="card" id="espera" hidden>
+    <div class="badge ok" aria-hidden="true">✓</div>
+    <div class="head">
+      <h1 id="espera-titulo">¡Listo!</h1>
+      <p class="lead" id="espera-texto">Ya quedó tu registro. Cuando el organizador libere las parejas, aquí vas a ver quién es la tuya.</p>
+    </div>
+    <dl class="summary" id="resumen"></dl>
+    <span class="pulse" id="espera-pulso">Revisando cada 20 segundos</span>
+    <button class="btn" type="button" id="revisar">Revisar ahora</button>
+    <p class="note">¿No eres tú? <button class="linkbtn" type="button" id="otra">Registrar a otra persona</button></p>
+  </section>
+
+  <!-- Pareja liberada -->
+  <section class="card" id="pareja" hidden>
+    <div class="head">
+      <div class="step-label">Tu pareja</div>
+      <h1 id="pareja-titulo">Ya tienes pareja</h1>
+    </div>
+    <div class="groups" id="pareja-lista"></div>
+    <p class="note">Escríbele y pónganse de acuerdo para conocerse. <button class="linkbtn" type="button" id="otra2">Registrar a otra persona</button></p>
+  </section>
+
+  <!-- Buscar por WhatsApp -->
+  <section class="card" id="buscar" hidden>
+    <div class="head">
+      <h1>Consulta tu pareja</h1>
+      <p class="lead">Escribe el WhatsApp con el que te registraste.</p>
+    </div>
+    <form id="f3" novalidate>
+      <div class="field" id="campo-buscar">
+        <label for="buscar-tel">WhatsApp</label>
+        <input type="tel" id="buscar-tel" inputmode="numeric" placeholder="55 1234 5678">
+        <div class="err" id="err-buscar"></div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="buscar-atras">Atrás</button>
+        <button class="btn" type="submit">Consultar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Login de administrador -->
+  <section class="card" id="login" hidden>
+    <div class="head">
+      <div class="step-label">Administrador</div>
+      <h1>Entrar</h1>
+    </div>
+    <form id="f4" novalidate>
+      <div class="field">
+        <label for="adm-user">Usuario</label>
+        <input type="text" id="adm-user" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label for="adm-pass">Contraseña</label>
+        <input type="password" id="adm-pass" autocomplete="current-password">
+      </div>
+      <div class="err" id="err-login"></div>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="login-atras">Atrás</button>
+        <button class="btn" type="submit" id="login-btn">Entrar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Panel de administrador -->
+  <section class="card" id="admin" hidden>
+    <div class="head">
+      <div class="step-label">Administrador</div>
+      <h1>Parejas</h1>
+      <span class="pill idle" id="estado">Sin formar</span>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="actions">
+      <button class="btn" type="button" id="formar">Formar parejas</button>
+      <button class="btn go" type="button" id="liberar" disabled>Liberar parejas</button>
+    </div>
+    <div class="confirm" id="confirmar" hidden>
+      <p id="confirmar-texto"></p>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="confirmar-no">Cancelar</button>
+        <button class="btn" type="button" id="confirmar-si">Sí, continuar</button>
+      </div>
+    </div>
+    <div class="err" id="err-admin"></div>
+
+    <div class="groups" id="grupos"></div>
+
+    <details>
+      <summary id="tabla-titulo">Registros</summary>
+      <div id="tabla"></div>
+    </details>
+
+    <div class="demo" id="demo" hidden>
+      <p class="note"><b>Modo prueba.</b> Todo se guarda solo en este navegador. Estos botones existen solo para probar.</p>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="demo-cargar">Agregar 11 personas de ejemplo</button>
+        <button class="btn ghost" type="button" id="demo-borrar">Borrar todo</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" type="button" id="refrescar">Actualizar</button>
+      <button class="btn ghost" type="button" id="salir">Cerrar sesión</button>
+    </div>
+  </section>
+
+  <p class="foot"><button class="linkbtn" type="button" id="ir-admin">Administrador</button></p>
+</div>
+
+
+<script>
+// ─── Configuración ────────────────────────────────────────────────
+// Cuando conectemos la hoja de Google, aquí va la dirección que nos dé.
+// Mientras esté vacía, la app funciona en modo prueba: todo se guarda en este navegador.
+const CONFIG = { SHEET_URL: "https://script.google.com/macros/s/AKfycbyMovO8FguhS_F_kDlBLCV1Oj-p7j0FO_K3_crtDxMlCkpU68MOEQs4u-f2y7ZQlEQG/exec" };
+// ──────────────────────────────────────────────────────────────────
+
+const $ = (id) => document.getElementById(id);
+const CARRERAS = { LEM: "Mercadotecnia", LDE: "Emprendimiento e Innovación", BGB: "Global Business", LAF: "Finanzas", CPF: "Contaduría Pública y Finanzas", LAE: "Estrategia y Administración" };
+const ME_KEY = "registro-hobbies-yo";
+let nombreCorto = "";
+let adminCred = null;
+let pollTimer = null;
+
+/* ── utilidades ── */
+function mostrar(id) {
+  ["paso1", "paso2", "espera", "pareja", "buscar", "login", "admin"].forEach((s) => ($(s).hidden = s !== id));
+  $("wrap").classList.toggle("wide", id === "admin");
+  $("ir-admin").hidden = id === "admin" || id === "login";
+  clearInterval(pollTimer);
+  if (id === "espera") pollTimer = setInterval(() => revisar(true), 20000);
+  window.scrollTo(0, 0);
+}
+function error(campo, errId, msg) {
+  $(errId).textContent = msg;
+  if (campo) $(campo).classList.toggle("invalid", !!msg);
+  return !msg;
+}
+const limpio = (v) => String(v || "").trim().replace(/\s+/g, " ");
+const hobbyNormal = (v) => { const t = limpio(v); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ""; };
+const telLimpio = (v) => String(v || "").replace(/\D/g, "").replace(/^52(?=\d{10}$)/, "");
+const telBonito = (t) => String(t).replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3");
+const primerNombre = (n) => limpio(n).split(" ")[0] || "";
+const norm = (s) => limpio(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const hobbiesDe = (r) => [r.hobby1, r.hobby2, r.hobby3].filter(Boolean);
+function comunes(a, b) {
+  const deB = new Set(hobbiesDe(b).map(norm));
+  const vistos = new Set(), out = [];
+  hobbiesDe(a).forEach((h) => { const k = norm(h); if (deB.has(k) && !vistos.has(k)) { vistos.add(k); out.push(h); } });
+  return out;
+}
+function leerYo() { try { return localStorage.getItem(ME_KEY) || ""; } catch { return ""; } }
+function guardarYo(id) { try { id ? localStorage.setItem(ME_KEY, id) : localStorage.removeItem(ME_KEY); } catch {} }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+/* ── armado de parejas ──
+   Peso de cada posible pareja: 10 puntos por hobby en común, castigo fuerte si son de la misma carrera
+   y un poco de azar para desempatar (por eso «Formar» otra vez puede dar otra combinación igual de buena).
+   Primero se toman las mejores parejas, luego se intercambian miembros mientras mejore el total.
+   Si el número es impar, la persona que sobra se suma al grupo donde más encaja (queda un trío). */
+function formarParejas(regs) {
+  const n = regs.length;
+  if (n < 2) return [];
+  const W = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const w = (regs[i].carrera === regs[j].carrera ? -1000 : 0) + 10 * comunes(regs[i], regs[j]).length + Math.random();
+    W[i][j] = W[j][i] = w;
+  }
+  const cand = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) cand.push([W[i][j], i, j]);
+  cand.sort((a, b) => b[0] - a[0]);
+  const usado = Array(n).fill(false), pares = [];
+  for (const [, i, j] of cand) if (!usado[i] && !usado[j]) { usado[i] = usado[j] = true; pares.push([i, j]); }
+  let solo = usado.indexOf(false);
+
+  let mejoro = true, vueltas = 0;
+  while (mejoro && vueltas++ < 200) {
+    mejoro = false;
+    for (let p = 0; p < pares.length; p++) for (let q = p + 1; q < pares.length; q++) {
+      const [a, b] = pares[p], [c, d] = pares[q], ahora = W[a][b] + W[c][d];
+      if (W[a][c] + W[b][d] > ahora + 1e-9) { pares[p] = [a, c]; pares[q] = [b, d]; mejoro = true; }
+      else if (W[a][d] + W[b][c] > ahora + 1e-9) { pares[p] = [a, d]; pares[q] = [b, c]; mejoro = true; }
+    }
+    if (solo >= 0) for (let p = 0; p < pares.length; p++) {
+      const [a, b] = pares[p];
+      if (W[solo][b] > W[a][b] + 1e-9) { pares[p] = [solo, b]; solo = a; mejoro = true; }
+      else if (W[solo][a] > W[a][b] + 1e-9) { pares[p] = [a, solo]; solo = b; mejoro = true; }
+    }
+  }
+  const grupos = pares.map((p) => p.slice());
+  if (solo >= 0) {
+    let mejor = -Infinity, k = 0;
+    grupos.forEach((g, i) => { const s = W[solo][g[0]] + W[solo][g[1]]; if (s > mejor) { mejor = s; k = i; } });
+    grupos[k].push(solo);
+  }
+  return grupos.map((g) => g.map((i) => regs[i].id));
+}
+
+/* ── conexión con los datos ──
+   Con SHEET_URL: todo va a la hoja de Google (la contraseña la revisa Google, no esta página).
+   Sin SHEET_URL: modo prueba en este navegador. */
+async function api(action, data = {}) {
+  if (!CONFIG.SHEET_URL) return demoApi(action, data);
+  const res = await fetch(CONFIG.SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, ...data }) });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "Algo falló. Intenta de nuevo.");
+  return j;
+}
+
+const DEMO_KEY = "registro-hobbies-demo";
+const DEMO_ADMIN = { user: "", pass: null }; // la contraseña real la revisa Google
+function demoLeer() { try { return JSON.parse(localStorage.getItem(DEMO_KEY)) || { registros: [], grupos: [], liberado: false }; } catch { return { registros: [], grupos: [], liberado: false }; } }
+function demoGuardar(db) { try { localStorage.setItem(DEMO_KEY, JSON.stringify(db)); } catch {} }
+function infoPareja(db, reg) {
+  const g = db.grupos.find((g) => g.includes(reg.id));
+  if (!g) return [];
+  return g.filter((id) => id !== reg.id).map((id) => db.registros.find((r) => r.id === id)).filter(Boolean)
+    .map((o) => ({ nombreCompleto: o.nombreCompleto, carrera: o.carrera, whatsapp: o.whatsapp, enComun: comunes(reg, o) }));
+}
+async function demoApi(action, d) {
+  const db = demoLeer();
+  const admin = () => { if (d.user !== DEMO_ADMIN.user || d.pass !== DEMO_ADMIN.pass) throw new Error("Usuario o contraseña incorrectos."); };
+  switch (action) {
+    case "register": {
+      const r = d.registro, previo = db.registros.find((x) => x.whatsapp === r.whatsapp);
+      if (previo) { Object.assign(previo, r, { id: previo.id }); demoGuardar(db); return { ok: true, id: previo.id }; }
+      r.id = Math.random().toString(36).slice(2, 10);
+      db.registros.push(r); demoGuardar(db); return { ok: true, id: r.id };
+    }
+    case "status": {
+      const reg = db.registros.find((x) => (d.id && x.id === d.id) || (d.whatsapp && x.whatsapp === d.whatsapp));
+      if (!reg) return { ok: true, registrado: false };
+      return { ok: true, registrado: true, id: reg.id, yo: reg, liberado: db.liberado, pareja: db.liberado ? infoPareja(db, reg) : [] };
+    }
+    case "adminList": admin(); return { ok: true, registros: db.registros, grupos: db.grupos, liberado: db.liberado };
+    case "savePairs": admin(); db.grupos = d.grupos; db.liberado = false; demoGuardar(db); return { ok: true };
+    case "release": admin(); if (d.liberar && !db.grupos.length) throw new Error("Primero forma las parejas."); db.liberado = !!d.liberar; demoGuardar(db); return { ok: true };
+    case "demoSeed": {
+      admin();
+      const ej = [
+        ["Ana Ruiz", "LDE", "Fútbol", "Cine", "Cocinar"], ["Bruno Díaz", "LAF", "Fútbol", "Gym", "Viajar"],
+        ["Carla Méndez", "LEM", "Fotografía", "Viajar", "Baile"], ["Diego Torres", "BGB", "Fotografía", "Series", "Correr"],
+        ["Elena Cruz", "CPF", "Leer", "Cine", "Pádel"], ["Fer Salinas", "LAE", "Pádel", "Leer", "Música"],
+        ["Gael Ortiz", "LDE", "Videojuegos", "Música", "Emprender"], ["Hilda Vega", "LEM", "Videojuegos", "Dibujo", "Series"],
+        ["Iván Rojas", "LAF", "Correr", "Gym", "Tenis"], ["Julia Paz", "BGB", "Tenis", "Cocinar", "Baile"],
+        ["Kevin Luna", "LDE", "Emprender", "Leer", "Gym"],
+      ];
+      ej.forEach(([nc, c, h1, h2, h3], i) => db.registros.push({
+        id: "ej" + Math.random().toString(36).slice(2, 8), fecha: new Date().toISOString(), nombre: nc.split(" ")[0] + " (ejemplo)",
+        nombreCompleto: nc + " (ejemplo)", whatsapp: String(5500000000 + i * 1111 + 7), hobby1: h1, hobby2: h2, hobby3: h3, carrera: c,
+      }));
+      demoGuardar(db); return { ok: true };
+    }
+    case "demoReset": admin(); try { localStorage.removeItem(DEMO_KEY); } catch {} guardarYo(""); return { ok: true };
+  }
+  throw new Error("Acción desconocida.");
+}
+
+/* ── hobbies: lista cerrada + «Otro» ── */
+const HOBBIES = ["Fútbol", "Gym", "Correr", "Leer", "Videojuegos", "Música", "Cine", "Series", "Viajar", "Cocinar", "Fotografía", "Baile", "Pádel", "Tenis", "Dibujo", "Emprender"];
+["hobby1", "hobby2", "hobby3"].forEach((id, i) => {
+  const sel = $(id);
+  sel.append(new Option(`Hobby ${i + 1}`, ""));
+  sel.options[0].disabled = true; sel.options[0].selected = true;
+  HOBBIES.forEach((h) => sel.append(new Option(h, h)));
+  sel.append(new Option("Otro", "Otro"));
+  sel.addEventListener("change", () => {
+    const otro = $(id + "-otro");
+    otro.hidden = sel.value !== "Otro";
+    if (!otro.hidden) otro.focus(); else otro.value = "";
+  });
+});
+$("f2").addEventListener("reset", () => setTimeout(() => ["hobby1", "hobby2", "hobby3"].forEach((id) => { $(id + "-otro").hidden = true; })));
+
+/* ── participante ── */
+$("f1").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const n = limpio($("nombre").value);
+  if (!error("campo-nombre", "err-nombre", n ? "" : "Escribe tu nombre para continuar.")) return;
+  nombreCorto = n;
+  $("saludo").textContent = `Hola, ${primerNombre(n)}. Cuéntanos de ti`;
+  if (!$("completo").value) $("completo").value = n;
+  mostrar("paso2");
+  $("completo").focus();
+});
+$("atras").addEventListener("click", () => mostrar("paso1"));
+
+$("f2").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const completo = limpio($("completo").value);
+  const tel = telLimpio($("whatsapp").value);
+  const hobbies = ["hobby1", "hobby2", "hobby3"].map((id) => hobbyNormal($(id).value === "Otro" ? $(id + "-otro").value : $(id).value));
+  const carrera = (document.querySelector('input[name="carrera"]:checked') || {}).value || "";
+
+  let ok = true;
+  ok = error("campo-completo", "err-completo", completo.split(" ").length >= 2 ? "" : "Escribe nombre y al menos un apellido.") && ok;
+  ok = error("campo-whatsapp", "err-whatsapp", /^\d{10}$/.test(tel) ? "" : "El número debe tener 10 dígitos.") && ok;
+  ok = error("campo-hobbies", "err-hobbies", !hobbies.every(Boolean) ? "Elige tus tres hobbies (si eliges «Otro», escribe cuál)." : new Set(hobbies.map(norm)).size < 3 ? "Elige tres hobbies distintos." : "") && ok;
+  ok = error("campo-carrera", "err-carrera", carrera ? "" : "Elige tu carrera.") && ok;
+  if (!ok) return;
+
+  const registro = { fecha: new Date().toISOString(), nombre: nombreCorto, nombreCompleto: completo, whatsapp: tel, hobby1: hobbies[0], hobby2: hobbies[1], hobby3: hobbies[2], carrera };
+  $("enviar").disabled = true; $("enviar").textContent = "Enviando…"; error(null, "err-envio", "");
+  try {
+    const r = await api("register", { registro });
+    guardarYo(r.id);
+    pintarEspera(registro);
+  } catch (err) {
+    error(null, "err-envio", "No se pudo enviar. Revisa tu conexión e intenta de nuevo.");
+  } finally {
+    $("enviar").disabled = false; $("enviar").textContent = "Enviar";
+  }
+});
+
+function pintarEspera(yo, yaFormadas) {
+  $("espera-titulo").textContent = `¡Listo, ${primerNombre(yo.nombre || yo.nombreCompleto)}!`;
+  $("espera-texto").textContent = yaFormadas
+    ? "Las parejas ya se liberaron, pero tú te registraste después. Avísale al organizador para que te asigne una."
+    : "Ya quedó tu registro. Cuando el organizador libere las parejas, aquí vas a ver quién es la tuya.";
+  $("resumen").innerHTML = "";
+  [["Nombre", yo.nombreCompleto], ["WhatsApp", telBonito(yo.whatsapp)], ["Hobbies", hobbiesDe(yo).join(", ")], ["Carrera", yo.carrera]]
+    .forEach(([k, v]) => $("resumen").append(el("dt", null, k), el("dd", null, v)));
+  mostrar("espera");
+}
+
+function pintarPareja(s) {
+  const lista = $("pareja-lista");
+  lista.innerHTML = "";
+  $("pareja-titulo").textContent = s.pareja.length > 1 ? `${primerNombre(s.yo.nombre)}, te tocó un trío` : `${primerNombre(s.yo.nombre)}, conoce a tu pareja`;
+  s.pareja.forEach((p) => {
+    const box = el("div", "partner");
+    box.append(el("div", "name", p.nombreCompleto));
+    box.append(el("span", "tag", p.carrera));
+    box.querySelector(".tag").style.justifySelf = "start";
+    box.append(el("p", "common", p.enComun.length
+      ? `Tienen en común: ${p.enComun.join(", ")}`
+      : "No comparten hobbies: buena oportunidad para que cada quien le enseñe el suyo al otro."));
+    const ph = el("div", "phone");
+    ph.append(el("code", null, telBonito(p.whatsapp)));
+    const copiar = el("button", "btn ghost", "Copiar número");
+    copiar.type = "button";
+    copiar.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(p.whatsapp); copiar.textContent = "Copiado"; }
+      catch { const r = document.createRange(); r.selectNodeContents(ph.querySelector("code")); getSelection().removeAllRanges(); getSelection().addRange(r); copiar.textContent = "Selecciónalo y cópialo"; }
+    });
+    const wa = el("a", "btn", "Escribirle por WhatsApp");
+    wa.href = `https://wa.me/52${p.whatsapp}`; wa.target = "_blank"; wa.rel = "noopener";
+    ph.append(copiar, wa);
+    box.append(ph);
+    lista.append(box);
+  });
+  mostrar("pareja");
+}
+
+async function revisar(silencioso) {
+  const id = leerYo();
+  if (!id) return;
+  const btn = $("revisar");
+  if (!silencioso) { btn.disabled = true; btn.textContent = "Revisando…"; }
+  try {
+    const s = await api("status", { id });
+    if (!s.registrado) { guardarYo(""); mostrar("paso1"); return; }
+    if (s.liberado && s.pareja.length) pintarPareja(s);
+    else if (silencioso && !$("espera").hidden) { /* sigue esperando */ }
+    else pintarEspera(s.yo, s.liberado);
+  } catch { /* sin conexión: lo intenta en la siguiente vuelta */ }
+  finally { btn.disabled = false; btn.textContent = "Revisar ahora"; }
+}
+$("revisar").addEventListener("click", () => revisar(false));
+
+function otraPersona() { guardarYo(""); $("f1").reset(); $("f2").reset(); nombreCorto = ""; mostrar("paso1"); $("nombre").focus(); }
+$("otra").addEventListener("click", otraPersona);
+$("otra2").addEventListener("click", otraPersona);
+
+$("ir-buscar").addEventListener("click", () => { mostrar("buscar"); $("buscar-tel").focus(); });
+$("buscar-atras").addEventListener("click", () => mostrar("paso1"));
+$("f3").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const tel = telLimpio($("buscar-tel").value);
+  if (!error("campo-buscar", "err-buscar", /^\d{10}$/.test(tel) ? "" : "El número debe tener 10 dígitos.")) return;
+  try {
+    const s = await api("status", { whatsapp: tel });
+    if (!s.registrado) return error("campo-buscar", "err-buscar", "No encontramos ese número. Revisa que sea el mismo con el que te registraste.");
+    guardarYo(s.id);
+    s.liberado && s.pareja.length ? pintarPareja(s) : pintarEspera(s.yo, s.liberado);
+  } catch { error("campo-buscar", "err-buscar", "No se pudo consultar. Revisa tu conexión."); }
+});
+
+/* ── administrador ── */
+$("ir-admin").addEventListener("click", () => { mostrar("login"); $("adm-user").focus(); });
+$("login-atras").addEventListener("click", inicio);
+$("f4").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const cred = { user: limpio($("adm-user").value).toLowerCase(), pass: $("adm-pass").value };
+  $("login-btn").disabled = true; error(null, "err-login", "");
+  try { const d = await api("adminList", cred); adminCred = cred; $("f4").reset(); pintarAdmin(d); }
+  catch (err) { error(null, "err-login", err.message); }
+  finally { $("login-btn").disabled = false; }
+});
+
+let adminDatos = null;
+function pintarAdmin(d) {
+  adminDatos = d;
+  const regs = d.registros, porId = Object.fromEntries(regs.map((r) => [r.id, r]));
+  const grupos = d.grupos.filter((g) => g.every((id) => porId[id]));
+  const sinPareja = regs.filter((r) => !grupos.some((g) => g.includes(r.id)));
+
+  // estado
+  const est = $("estado");
+  if (d.liberado) { est.className = "pill live"; est.textContent = "Liberadas · cada persona ya ve a su pareja"; }
+  else if (grupos.length) { est.className = "pill draft"; est.textContent = "Formadas, sin liberar · nadie las ve todavía"; }
+  else { est.className = "pill idle"; est.textContent = "Sin formar"; }
+
+  // números
+  const st = $("stats"); st.innerHTML = "";
+  const t = el("div", "stat total"); t.append(el("b", null, regs.length), el("small", null, "Registrados")); st.append(t);
+  Object.keys(CARRERAS).forEach((c) => { const n = regs.filter((r) => r.carrera === c).length; const s = el("div", "stat"); s.append(el("b", null, n), el("small", null, c)); st.append(s); });
+
+  // botones
+  $("formar").textContent = grupos.length ? "Volver a formar" : "Formar parejas";
+  $("formar").disabled = regs.length < 2;
+  $("liberar").textContent = d.liberado ? "Ocultar parejas" : "Liberar parejas";
+  $("liberar").className = d.liberado ? "btn ghost" : "btn go";
+  $("liberar").disabled = !grupos.length;
+  $("confirmar").hidden = true;
+  error(null, "err-admin", sinPareja.length && grupos.length ? `${sinPareja.length} persona(s) se registraron después de formar las parejas: ${sinPareja.map((r) => r.nombreCompleto).join(", ")}. Vuelve a formar para incluirlas.` : "");
+
+  // grupos
+  const gl = $("grupos"); gl.innerHTML = "";
+  if (!grupos.length) gl.append(el("p", "empty", regs.length < 2 ? "Cuando haya al menos dos personas registradas podrás formar las parejas." : "Todavía no hay parejas. Presiona «Formar parejas» para ver una propuesta; nadie la verá hasta que la liberes."));
+  grupos.forEach((g) => {
+    const ms = g.map((id) => porId[id]);
+    const mismaCarrera = new Set(ms.map((m) => m.carrera)).size < ms.length;
+    const com = ms.length === 2 ? comunes(ms[0], ms[1]) : [...new Set(ms.flatMap((a, i) => ms.slice(i + 1).flatMap((b) => comunes(a, b))))];
+    const box = el("div", "group" + (mismaCarrera ? " flag" : ""));
+    const who = el("div", "who");
+    ms.forEach((m) => { const s = el("span", null, m.nombreCompleto); s.append(el("small", null, m.carrera)); who.append(s); });
+    box.append(who);
+    box.append(el("div", "why", (ms.length === 3 ? "Trío · " : "") + (mismaCarrera ? "Misma carrera (no había otra opción) · " : "") + (com.length ? `En común: ${com.join(", ")}` : "Sin hobbies en común")));
+    gl.append(box);
+  });
+
+  // tabla
+  $("tabla-titulo").textContent = `Registros (${regs.length})`;
+  if (!regs.length) $("tabla").innerHTML = '<p class="empty">Todavía no hay registros.</p>';
+  else {
+    const tbl = el("table"), head = el("tr");
+    ["Nombre", "WhatsApp", "Hobby 1", "Hobby 2", "Hobby 3", "Carrera"].forEach((h) => head.append(el("th", null, h)));
+    const th = el("thead"); th.append(head); tbl.append(th);
+    const tb = el("tbody");
+    regs.forEach((r) => { const tr = el("tr"); [r.nombreCompleto, telBonito(r.whatsapp), r.hobby1, r.hobby2, r.hobby3, r.carrera].forEach((v) => tr.append(el("td", null, v))); tb.append(tr); });
+    tbl.append(tb);
+    const w = el("div", "table-wrap"); w.append(tbl);
+    $("tabla").innerHTML = ""; $("tabla").append(w);
+  }
+  $("demo").hidden = !!CONFIG.SHEET_URL;
+  mostrar("admin");
+}
+
+async function recargarAdmin() {
+  try { pintarAdmin(await api("adminList", adminCred)); } catch (err) { error(null, "err-admin", err.message); }
+}
+let accionPendiente = null;
+function pedirConfirmacion(texto, accion) { $("confirmar-texto").textContent = texto; accionPendiente = accion; $("confirmar").hidden = false; }
+$("confirmar-no").addEventListener("click", () => { $("confirmar").hidden = true; accionPendiente = null; });
+$("confirmar-si").addEventListener("click", async () => { $("confirmar").hidden = true; const a = accionPendiente; accionPendiente = null; if (a) await a(); });
+
+async function formar() {
+  const grupos = formarParejas(adminDatos.registros);
+  try { await api("savePairs", { ...adminCred, grupos }); await recargarAdmin(); } catch (err) { error(null, "err-admin", err.message); }
+}
+$("formar").addEventListener("click", () => {
+  if (adminDatos.liberado) pedirConfirmacion("Las parejas ya están liberadas. Si vuelves a formarlas, se ocultan y tendrás que liberarlas otra vez. ¿Continuar?", formar);
+  else formar();
+});
+$("liberar").addEventListener("click", () => {
+  if (adminDatos.liberado) {
+    pedirConfirmacion("¿Ocultar las parejas? La gente volverá a ver la pantalla de espera.", async () => { await api("release", { ...adminCred, liberar: false }); await recargarAdmin(); });
+  } else {
+    pedirConfirmacion(`¿Liberar ${adminDatos.grupos.length} grupos? Cada persona verá en su celular quién es su pareja y su WhatsApp.`, async () => {
+      try { await api("release", { ...adminCred, liberar: true }); await recargarAdmin(); } catch (err) { error(null, "err-admin", err.message); }
+    });
+  }
+});
+$("refrescar").addEventListener("click", recargarAdmin);
+$("salir").addEventListener("click", () => { adminCred = null; adminDatos = null; inicio(); });
+$("demo-cargar").addEventListener("click", async () => { await api("demoSeed", adminCred); await recargarAdmin(); });
+$("demo-borrar").addEventListener("click", () => pedirConfirmacion("¿Borrar todos los registros y parejas de prueba de este navegador?", async () => { await api("demoReset", adminCred); await recargarAdmin(); }));
+
+/* ── arranque ── */
+function inicio() {
+  if (location.hash === "#admin") { mostrar("login"); return; }
+  if (leerYo()) { mostrar("espera"); $("espera-titulo").textContent = "Un momento…"; $("espera-texto").textContent = "Revisando tu registro."; $("resumen").innerHTML = ""; revisar(false); }
+  else mostrar("paso1");
+}
+window.addEventListener("hashchange", () => { if (location.hash === "#admin") mostrar("login"); });
+inicio();
+</script>
+
+</body>
+</html>
