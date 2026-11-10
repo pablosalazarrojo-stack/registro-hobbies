@@ -25,7 +25,7 @@ function setup() {
   r.setFrozenRows(1);
   const s1 = ss.getSheetByName("Sheet1") || ss.getSheetByName("Hoja 1");
   let p = ss.getSheetByName(HOJA_PAR) || ss.insertSheet(HOJA_PAR);
-  p.getRange(1, 1, 1, 5).setValues([["grupo", "id", "nombreCompleto", "carrera", "enComun"]]).setFontWeight("bold");
+  p.getRange(1, 1, 1, 6).setValues([["grupo", "id", "nombreCompleto", "carrera", "enComun", "animal"]]).setFontWeight("bold");
   p.setFrozenRows(1);
   if (s1 && ss.getSheets().length > 2) ss.deleteSheet(s1);
   const props = PropertiesService.getScriptProperties();
@@ -43,8 +43,8 @@ function doPost(e) {
     switch (d.action) {
       case "register": out = registrar(d.registro); break;
       case "status": out = estado(d); break;
-      case "adminList": admin(d); out = { ok: true, registros: leerRegistros(), grupos: leerGrupos(), liberado: liberado() }; break;
-      case "savePairs": admin(d); guardarGrupos(d.grupos); out = { ok: true }; break;
+      case "adminList": admin(d); const gr = leerGruposYAnimales(); out = { ok: true, registros: leerRegistros(), grupos: gr.grupos, animales: gr.animales, liberado: liberado() }; break;
+      case "savePairs": admin(d); guardarGrupos(d.grupos, d.animales || []); out = { ok: true }; break;
       case "release":
         admin(d);
         if (d.liberar && !leerGrupos().length) throw new Error("Primero forma las parejas.");
@@ -102,25 +102,28 @@ function registrar(r) {
   }
 }
 
-function leerGrupos() {
+function leerGruposYAnimales() {
   const v = hoja(HOJA_PAR).getDataRange().getValues().slice(1);
-  const m = {};
-  v.forEach((r) => { if (r[1]) (m[r[0]] = m[r[0]] || []).push(String(r[1])); });
-  return Object.keys(m).sort((a, b) => a - b).map((k) => m[k]);
+  const m = {}, a = {};
+  v.forEach((r) => { if (r[1]) { (m[r[0]] = m[r[0]] || []).push(String(r[1])); if (r[5]) a[r[0]] = String(r[5]); } });
+  const ks = Object.keys(m).sort((x, y) => x - y);
+  return { grupos: ks.map((k) => m[k]), animales: ks.map((k) => a[k] || "") };
 }
+function leerGrupos() { return leerGruposYAnimales().grupos; }
 
-function guardarGrupos(grupos) {
+function guardarGrupos(grupos, animales) {
   const porId = {}; leerRegistros().forEach((r) => (porId[r.id] = r));
   const filas = [];
   grupos.forEach((g, i) => g.forEach((id) => {
     const r = porId[id]; if (!r) return;
     const otros = g.filter((x) => x !== id).map((x) => porId[x]).filter(Boolean);
     const com = [].concat.apply([], otros.map((o) => comunes(r, o)));
-    filas.push([i + 1, id, r.nombreCompleto, r.carrera, com.join(", ")]);
+    filas.push([i + 1, id, r.nombreCompleto, r.carrera, com.join(", "), String(animales[i] || "")]);
   }));
   const sh = hoja(HOJA_PAR);
-  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 5).clearContent();
-  if (filas.length) sh.getRange(2, 1, filas.length, 5).setValues(filas);
+  sh.getRange(1, 1, 1, 6).setValues([["grupo", "id", "nombreCompleto", "carrera", "enComun", "animal"]]).setFontWeight("bold");
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 6).clearContent();
+  if (filas.length) sh.getRange(2, 1, filas.length, 6).setValues(filas);
   PropertiesService.getScriptProperties().setProperty("LIBERADO", "false");
 }
 
@@ -139,11 +142,14 @@ function estado(d) {
   const yo = regs.find((x) => (d.id && x.id === d.id) || (tel && x.whatsapp === tel));
   if (!yo) return { ok: true, registrado: false };
   const lib = liberado();
-  let pareja = [];
+  let pareja = [], animal = "";
   if (lib) {
-    const g = leerGrupos().find((g) => g.indexOf(yo.id) >= 0);
+    const gr = leerGruposYAnimales();
+    const gi = gr.grupos.findIndex((g) => g.indexOf(yo.id) >= 0);
+    const g = gi >= 0 ? gr.grupos[gi] : null;
+    if (gi >= 0) animal = gr.animales[gi];
     if (g) pareja = g.filter((id) => id !== yo.id).map((id) => regs.find((r) => r.id === id)).filter(Boolean)
       .map((o) => ({ nombreCompleto: o.nombreCompleto, carrera: o.carrera, whatsapp: o.whatsapp, enComun: comunes(yo, o) }));
   }
-  return { ok: true, registrado: true, id: yo.id, yo: { nombre: yo.nombre, nombreCompleto: yo.nombreCompleto, whatsapp: yo.whatsapp, hobby1: yo.hobby1, hobby2: yo.hobby2, hobby3: yo.hobby3, carrera: yo.carrera }, liberado: lib, pareja: pareja };
+  return { ok: true, registrado: true, id: yo.id, yo: { nombre: yo.nombre, nombreCompleto: yo.nombreCompleto, whatsapp: yo.whatsapp, hobby1: yo.hobby1, hobby2: yo.hobby2, hobby3: yo.hobby3, carrera: yo.carrera }, liberado: lib, pareja: pareja, animal: animal };
 }

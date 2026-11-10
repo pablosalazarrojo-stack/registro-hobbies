@@ -123,6 +123,11 @@ fieldset.invalid .chip span { border-color: var(--error); }
 .phone { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .phone code { font-family: var(--body); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; user-select: all; }
 
+.animal { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 12px; border: 1.5px solid var(--accent); }
+.animal .emo { font-size: 44px; line-height: 1; }
+.animal b { font-family: var(--display); font-size: 26px; font-weight: 800; display: block; }
+.animal small { color: var(--muted); font-size: 13px; }
+.group .who .ani { margin-left: auto; font-weight: 600; color: var(--accent); }
 /* Admin */
 .pill { justify-self: start; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
 .pill.idle { background: var(--accent-soft); color: var(--accent); }
@@ -346,6 +351,15 @@ const CONFIG = { SHEET_URL: "https://script.google.com/macros/s/AKfycbyMovO8Fguh
 const $ = (id) => document.getElementById(id);
 const CARRERAS = { LEM: "Mercadotecnia", LDE: "Emprendimiento e Innovación", BGB: "Global Business", LAF: "Finanzas", CPF: "Contaduría Pública y Finanzas", LAE: "Estrategia y Administración" };
 const ME_KEY = "registro-hobbies-yo";
+const ANIMALES = ["Pollo", "Perro", "Gato", "Vaca"];
+const EMOJI = { Pollo: "🐔", Perro: "🐶", Gato: "🐱", Vaca: "🐮" };
+// Reparte los grupos en cuatro partes iguales (si no cuadra exacto, algunas llevan uno más), al azar.
+function asignarAnimales(n) {
+  const orden = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+  const out = Array(n);
+  orden.forEach((g, k) => (out[g] = ANIMALES[k % 4]));
+  return out;
+}
 let nombreCorto = "";
 let adminCred = null;
 let pollTimer = null;
@@ -458,10 +472,11 @@ async function demoApi(action, d) {
     case "status": {
       const reg = db.registros.find((x) => (d.id && x.id === d.id) || (d.whatsapp && x.whatsapp === d.whatsapp));
       if (!reg) return { ok: true, registrado: false };
-      return { ok: true, registrado: true, id: reg.id, yo: reg, liberado: db.liberado, pareja: db.liberado ? infoPareja(db, reg) : [] };
+      const gi = db.grupos.findIndex((g) => g.includes(reg.id));
+      return { ok: true, registrado: true, id: reg.id, yo: reg, liberado: db.liberado, pareja: db.liberado ? infoPareja(db, reg) : [], animal: db.liberado && gi >= 0 ? (db.animales || [])[gi] || "" : "" };
     }
-    case "adminList": admin(); return { ok: true, registros: db.registros, grupos: db.grupos, liberado: db.liberado };
-    case "savePairs": admin(); db.grupos = d.grupos; db.liberado = false; demoGuardar(db); return { ok: true };
+    case "adminList": admin(); return { ok: true, registros: db.registros, grupos: db.grupos, animales: db.animales || [], liberado: db.liberado };
+    case "savePairs": admin(); db.grupos = d.grupos; db.animales = d.animales || []; db.liberado = false; demoGuardar(db); return { ok: true };
     case "release": admin(); if (d.liberar && !db.grupos.length) throw new Error("Primero forma las parejas."); db.liberado = !!d.liberar; demoGuardar(db); return { ok: true };
     case "demoSeed": {
       admin();
@@ -555,6 +570,12 @@ function pintarPareja(s) {
   const lista = $("pareja-lista");
   lista.innerHTML = "";
   $("pareja-titulo").textContent = s.pareja.length > 1 ? `${primerNombre(s.yo.nombre)}, te tocó un trío` : `${primerNombre(s.yo.nombre)}, conoce a tu pareja`;
+  if (s.animal) {
+    const a = el("div", "animal");
+    a.append(el("span", "emo", EMOJI[s.animal] || ""));
+    const t = el("div"); t.append(el("small", null, "Tu equipo"), el("b", null, s.animal));
+    a.append(t); lista.append(a);
+  }
   s.pareja.forEach((p) => {
     const box = el("div", "partner");
     box.append(el("div", "name", p.nombreCompleto));
@@ -630,7 +651,8 @@ let adminDatos = null;
 function pintarAdmin(d) {
   adminDatos = d;
   const regs = d.registros, porId = Object.fromEntries(regs.map((r) => [r.id, r]));
-  const grupos = d.grupos.filter((g) => g.every((id) => porId[id]));
+  const animales = d.animales || [];
+  const grupos = d.grupos.map((g, i) => Object.assign(g.slice(), { animal: animales[i] || "" })).filter((g) => g.every((id) => porId[id]));
   const sinPareja = regs.filter((r) => !grupos.some((g) => g.includes(r.id)));
 
   // estado
@@ -643,6 +665,7 @@ function pintarAdmin(d) {
   const st = $("stats"); st.innerHTML = "";
   const t = el("div", "stat total"); t.append(el("b", null, regs.length), el("small", null, "Registrados")); st.append(t);
   Object.keys(CARRERAS).forEach((c) => { const n = regs.filter((r) => r.carrera === c).length; const s = el("div", "stat"); s.append(el("b", null, n), el("small", null, c)); st.append(s); });
+  if (grupos.length) ANIMALES.forEach((a) => { const n = grupos.filter((g) => g.animal === a).length; const s = el("div", "stat"); s.append(el("b", null, `${EMOJI[a]} ${n}`), el("small", null, a)); st.append(s); });
 
   // botones
   $("formar").textContent = grupos.length ? "Volver a formar" : "Formar parejas";
@@ -663,6 +686,7 @@ function pintarAdmin(d) {
     const box = el("div", "group" + (mismaCarrera ? " flag" : ""));
     const who = el("div", "who");
     ms.forEach((m) => { const s = el("span", null, m.nombreCompleto); s.append(el("small", null, m.carrera)); who.append(s); });
+    if (g.animal) who.append(el("span", "ani", `${EMOJI[g.animal] || ""} ${g.animal}`));
     box.append(who);
     box.append(el("div", "why", (ms.length === 3 ? "Trío · " : "") + (mismaCarrera ? "Misma carrera (no había otra opción) · " : "") + (com.length ? `En común: ${com.join(", ")}` : "Sin hobbies en común")));
     gl.append(box);
@@ -695,7 +719,8 @@ $("confirmar-si").addEventListener("click", async () => { $("confirmar").hidden 
 
 async function formar() {
   const grupos = formarParejas(adminDatos.registros);
-  try { await api("savePairs", { ...adminCred, grupos }); await recargarAdmin(); } catch (err) { error(null, "err-admin", err.message); }
+  const animales = asignarAnimales(grupos.length);
+  try { await api("savePairs", { ...adminCred, grupos, animales }); await recargarAdmin(); } catch (err) { error(null, "err-admin", err.message); }
 }
 $("formar").addEventListener("click", () => {
   if (adminDatos.liberado) pedirConfirmacion("Las parejas ya están liberadas. Si vuelves a formarlas, se ocultan y tendrás que liberarlas otra vez. ¿Continuar?", formar);
